@@ -1,12 +1,13 @@
 const express = require("express");
-
 const app = express();
-
-const Book = require('./models/books');
-
 const mongoose = require("mongoose");
+const booksRoutes = require('./routes/books')
 
-mongoose.connect('mongodb+srv://ahmedinho0o0:SELPOKFSD1@cluster0.cim10.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+require('dotenv').config()
+
+const mongoMP = process.env.MONGODB_PASSWORD;
+
+mongoose.connect(`mongodb+srv://ahmedinho0o0:${mongoMP}@cluster0.cim10.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`)
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch(() => console.log('Connexion à MongoDB échouée !'));
 
@@ -19,26 +20,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post('/api/books', (req, res, next) => {
-  delete req.body._id;
-  const book = new Book({
-    ...req.body
-  });
-  book.save()
-    .then(() => res.status(201).json({ message: 'Objet enregistré !' }))
-    .catch(error => res.status(400).json({ error }));
-});
+app.use('/api/books', booksRoutes);
 
-app.get('/api/books/:id', (req, res, next) => {
-  Book.findOne({ _id: req.params.id })
-    .then(book => res.status(200).json(book))
-    .catch(error => res.status(404).json({ error }));
-});
-
-app.get('/api/books', (req, res, next) => {
-  Book.find()
-    .then(books => res.status(200).json(books))
-    .catch(error => res.status(400).json({ error }));
-})
 
 module.exports = app;
