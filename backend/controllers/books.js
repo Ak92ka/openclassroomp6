@@ -8,17 +8,17 @@ exports.createBook = (req, res, next) => {
   delete bookObject._id;
   delete bookObject._userId;
 
-  const outputFileName = `images/${Date.now()}.webp`; // Specify the output file name
+  const outputFileName = `images/${Date.now()}.webp`;
 
   sharp(req.file.buffer)
-  .resize(320, 240, { fit: 'cover' })
-  .webp({ quality: 80 })
-  .toFile(outputFileName)
+    .resize({height: 320, fit: 'inside' })
+    .webp({ quality: 80 })
+    .toFile(outputFileName)
     .then(() => {
       const book = new Book({
         ...bookObject,
         userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get('host')}/${outputFileName}` // Update URL
+        imageUrl: `${req.protocol}://${req.get('host')}/${outputFileName}`
       });
       return book.save();
     })
@@ -33,23 +33,37 @@ exports.modifyBook = (req, res, next) => {
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   } : { ...req.body };
   delete bookObject._userId;
-  Book.findOne({ _id: req.params.id })
-    .then((book) => {
-      if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: 'Not authorized' });
-      } 
-      if (req.file) {
-        const oldFilename = book.imageUrl.split('/images/')[1];
-        fs.unlink(`images/${oldFilename}`, (err) => {
-        });
-      }
-        Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
-          .then(() => res.status(200).json({ message: 'Objet modifié!' }))
+  const outputFileName = `images/${Date.now()}.webp`;
+
+  sharp(req.file.buffer)
+    .resize({height: 320, fit: 'inside' })
+    .webp({ quality: 80 })
+    .toFile(outputFileName)
+    .then(() => {
+      Book.findOne({ _id: req.params.id })
+      .then((book) => {
+        if (book.userId != req.auth.userId) {
+          res.status(401).json({ message: 'Not authorized' });
+        }
+        if (req.file) {
+          const oldFilename = book.imageUrl.split('/images/')[1];
+          fs.unlink(`images/${oldFilename}`, (err) => {
+          });
+        }
+        Book.updateOne({ _id: req.params.id }, {
+           ...bookObject, 
+           _id: req.params.id,
+           imageUrl: `${req.protocol}://${req.get('host')}/${outputFileName}`
+           })
           .catch(error => res.status(401).json({ error }));
+      })
+      .catch((error) => {
+        res.status(400).json({ error });
+      });
+  
     })
-    .catch((error) => {
-      res.status(400).json({ error });
-    });
+    .then(() => res.status(201).json({ message: 'Objet enregistré !' }))
+    .catch(error => res.status(400).json({ error }));
 };
 
 exports.deleteBook = (req, res, next) => {
