@@ -55,7 +55,7 @@ exports.modifyBook = (req, res, next) => {
            _id: req.params.id,
            imageUrl: `${req.protocol}://${req.get('host')}/${outputFileName}`
            })
-          .catch(error => res.status(401).json({ error }));
+          .catch(error => res.status(400).json({ error }));
       })
       .catch((error) => {
         res.status(400).json({ error });
